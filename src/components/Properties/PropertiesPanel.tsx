@@ -1,0 +1,37 @@
+import { useAppStore } from '../../store/appStore';
+import NodeProperties from './NodeProperties';
+import EdgeProperties from './EdgeProperties';
+import LaneProperties from './LaneProperties';
+import LifelineProperties from './LifelineProperties';
+import MessageProperties from './MessageProperties';
+import MetaProperties from './MetaProperties';
+import ZoneProperties from './ZoneProperties';
+
+export default function PropertiesPanel() {
+  const ui = useAppStore((s) => s.ui);
+
+  const hasSelection =
+    ui.selectedNodeId ||
+    ui.selectedEdgeId ||
+    ui.selectedLaneId ||
+    ui.selectedLifelineId ||
+    ui.selectedMessageId ||
+    ui.selectedZoneId;
+
+  return (
+    <div className="w-56 bg-white border-l border-slate-200 flex flex-col overflow-y-auto shrink-0">
+      <div className="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+        Eigenschaften
+      </div>
+      <div className="p-3 flex-1">
+        {!hasSelection && <MetaProperties />}
+        {ui.selectedNodeId && <NodeProperties />}
+        {ui.selectedEdgeId && <EdgeProperties />}
+        {ui.selectedLaneId && <LaneProperties />}
+        {ui.selectedLifelineId && <LifelineProperties />}
+        {ui.selectedMessageId && <MessageProperties />}
+        {ui.selectedZoneId && <ZoneProperties />}
+      </div>
+    </div>
+  );
+}

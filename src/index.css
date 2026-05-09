@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .input {
+    @apply w-full text-xs border border-slate-200 rounded px-2 py-1.5 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 bg-white;
+  }
+
+  .label {
+    @apply block text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-1;
+  }
+
+  .toolbar-btn {
+    @apply px-2.5 py-1 text-xs font-medium text-slate-200 hover:text-white hover:bg-slate-700 rounded transition-colors cursor-pointer select-none;
+  }
+
+  .btn-danger {
+    @apply px-3 py-1.5 text-xs font-medium text-white bg-red-500 hover:bg-red-600 rounded transition-colors;
+  }
+}
+
+/* React Flow overrides */
+.react-flow__attribution {
+  display: none;
+}
+
+.react-flow__handle {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.react-flow__node:hover .react-flow__handle,
+.react-flow__node.selected .react-flow__handle {
+  opacity: 1;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
