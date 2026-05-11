@@ -6,6 +6,7 @@ import LifelineProperties from './LifelineProperties';
 import MessageProperties from './MessageProperties';
 import MetaProperties from './MetaProperties';
 import ZoneProperties from './ZoneProperties';
+import ActivationBarProperties from './ActivationBarProperties';
 
 export default function PropertiesPanel() {
   const ui = useAppStore((s) => s.ui);
@@ -16,7 +17,8 @@ export default function PropertiesPanel() {
     ui.selectedLaneId ||
     ui.selectedLifelineId ||
     ui.selectedMessageId ||
-    ui.selectedZoneId;
+    ui.selectedZoneId ||
+    ui.selectedBarId;
 
   return (
     <div className="w-56 bg-white border-l border-slate-200 flex flex-col overflow-y-auto shrink-0">
@@ -31,6 +33,7 @@ export default function PropertiesPanel() {
         {ui.selectedLifelineId && <LifelineProperties />}
         {ui.selectedMessageId && <MessageProperties />}
         {ui.selectedZoneId && <ZoneProperties />}
+        {ui.selectedBarId && <ActivationBarProperties />}
       </div>
     </div>
   );

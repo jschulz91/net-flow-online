@@ -9,8 +9,10 @@ type Props = {
   isSelected: boolean;
   isDragging?: boolean;
   onDragStart?: (e: React.MouseEvent) => void;
+  onBarCreateStart?: (e: React.MouseEvent) => void;
 };
 
+// Exported so SequenceCanvas can use the same icons in the sticky header
 export const LIFELINE_ICONS: Record<string, string> = {
   actor: '👤',
   system: '⬜',
@@ -22,7 +24,7 @@ export const LIFELINE_ICONS: Record<string, string> = {
 };
 
 export default function LifelineColumn({
-  lifeline, x, totalHeight, isSelected, isDragging = false, onDragStart,
+  lifeline, x, totalHeight, isSelected, isDragging = false, onDragStart, onBarCreateStart,
 }: Props) {
   const { selectLifeline } = useAppStore();
 
@@ -49,7 +51,18 @@ export default function LifelineColumn({
         strokeWidth={1.5}
         strokeDasharray="6 4"
         opacity={0.5}
+        style={{ pointerEvents: 'none' }}
       />
+      {/* Wide transparent hit-area on lifeline body — drag here to create activation bar */}
+      {onBarCreateStart && (
+        <rect
+          x={x - 10} y={lifelineHeaderHeight}
+          width={20} height={totalHeight - lifelineHeaderHeight}
+          fill="transparent"
+          style={{ cursor: 'crosshair' }}
+          onMouseDown={(e) => { e.stopPropagation(); onBarCreateStart(e); }}
+        />
+      )}
 
       {/* Header box */}
       <rect

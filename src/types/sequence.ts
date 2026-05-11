@@ -42,8 +42,8 @@ export type SequenceMessage = {
 export type ActivationBar = {
   id: string;
   lifelineId: string;
-  startMessageId: string;
-  endMessageId: string;
+  y: number;        // top edge in SVG coordinates
+  height: number;   // min 20px
 };
 
 export type FragmentType = 'alt' | 'opt' | 'loop' | 'par' | 'ref';

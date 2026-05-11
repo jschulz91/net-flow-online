@@ -38,6 +38,7 @@ type UIState = {
   selectedMessageId: string | null;
   selectedFragmentId: string | null;
   selectedZoneId: string | null;
+  selectedBarId: string | null;
 };
 
 type HistoryEntry = {
@@ -127,7 +128,9 @@ type Store = AppState & {
 
   // Sequence – Activation Bars
   addActivationBar: (bar: Omit<ActivationBar, 'id'>) => void;
+  updateActivationBar: (id: string, patch: Partial<Pick<ActivationBar, 'y' | 'height'>>) => void;
   removeActivationBar: (id: string) => void;
+  selectBar: (id: string | null) => void;
 
   // Sequence – Fragments
   addFragment: (frag: Omit<SequenceFragment, 'id'>) => void;
@@ -169,6 +172,7 @@ export const useAppStore = create<Store>((set, get) => ({
     selectedMessageId: null,
     selectedFragmentId: null,
     selectedZoneId: null,
+    selectedBarId: null,
   },
   past: [],
   future: [],
@@ -256,6 +260,17 @@ export const useAppStore = create<Store>((set, get) => ({
     set(
       produce((s: Store) => {
         s.ui.selectedZoneId = id;
+        if (id) {
+          s.ui.selectedLifelineId = null;
+          s.ui.selectedMessageId = null;
+        }
+      }),
+    ),
+
+  selectBar: (id) =>
+    set(
+      produce((s: Store) => {
+        s.ui.selectedBarId = id;
         if (id) {
           s.ui.selectedLifelineId = null;
           s.ui.selectedMessageId = null;
@@ -524,9 +539,7 @@ export const useAppStore = create<Store>((set, get) => ({
         const canvas = s.sequence[s.ui.activeMode];
         canvas.messages = canvas.messages.filter((m) => m.id !== id);
         canvas.messages.forEach((m, i) => (m.order = i));
-        canvas.activationBars = canvas.activationBars.filter(
-          (b) => b.startMessageId !== id && b.endMessageId !== id,
-        );
+        // Activation bars are no longer message-linked; leave them as-is on message delete
       }),
     );
   },
@@ -571,6 +584,16 @@ export const useAppStore = create<Store>((set, get) => ({
       }),
     );
   },
+
+  updateActivationBar: (id, patch) =>
+    set(
+      produce((s: Store) => {
+        const bar = s.sequence[s.ui.activeMode].activationBars.find((b) => b.id === id);
+        if (!bar) return;
+        if (patch.y !== undefined) bar.y = patch.y;
+        if (patch.height !== undefined) bar.height = Math.max(20, patch.height);
+      }),
+    ),
 
   removeActivationBar: (id) => {
     get().pushHistory();
@@ -746,6 +769,7 @@ export const useAppStore = create<Store>((set, get) => ({
         s.ui.selectedLifelineId = null;
         s.ui.selectedMessageId = null;
         s.ui.selectedZoneId = null;
+        s.ui.selectedBarId = null;
       }),
     ),
 }));

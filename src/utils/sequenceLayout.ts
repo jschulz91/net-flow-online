@@ -68,23 +68,14 @@ export function computeMessageLayout(
   });
 }
 
+// computeActivationBarLayouts kept for backward-compat but no longer used in canvas —
+// bars now use explicit y/height from ActivationBar data directly.
 export function computeActivationBarLayouts(
-  bars: ActivationBar[],
-  messages: SequenceMessage[],
-  lifelineLayouts: LifelineLayout[],
+  _bars: ActivationBar[],
+  _messages: SequenceMessage[],
+  _lifelineLayouts: LifelineLayout[],
 ): ActivationBarLayout[] {
-  const llMap = new Map(lifelineLayouts.map((l) => [l.lifelineId, l.x]));
-  const msgMap = new Map(messages.map((m, i) => [m.id, i]));
-  const { rowHeight, lifelineHeaderHeight, activationBarWidth } = SEQ_CONSTANTS;
-
-  return bars.map((bar) => {
-    const startIdx = msgMap.get(bar.startMessageId) ?? 0;
-    const endIdx = msgMap.get(bar.endMessageId) ?? startIdx;
-    const x = (llMap.get(bar.lifelineId) ?? 0) - activationBarWidth / 2;
-    const y = lifelineHeaderHeight + startIdx * rowHeight;
-    const height = (endIdx - startIdx + 1) * rowHeight;
-    return { barId: bar.id, x, y, height };
-  });
+  return [];
 }
 
 export function computeFragmentLayouts(
