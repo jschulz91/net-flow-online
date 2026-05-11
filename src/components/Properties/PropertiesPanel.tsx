@@ -7,6 +7,7 @@ import MessageProperties from './MessageProperties';
 import MetaProperties from './MetaProperties';
 import ZoneProperties from './ZoneProperties';
 import ActivationBarProperties from './ActivationBarProperties';
+import FragmentProperties from './FragmentProperties';
 
 export default function PropertiesPanel() {
   const ui = useAppStore((s) => s.ui);
@@ -34,6 +35,7 @@ export default function PropertiesPanel() {
         {ui.selectedMessageId && <MessageProperties />}
         {ui.selectedZoneId && <ZoneProperties />}
         {ui.selectedBarId && <ActivationBarProperties />}
+        {ui.selectedFragmentId && <FragmentProperties />}
       </div>
     </div>
   );

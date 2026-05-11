@@ -36,14 +36,16 @@ function xToLLOrder(mouseX: number, count: number) {
 }
 
 export default function SequenceCanvas() {
-  const canvas         = useAppStore((s) => s.sequence[s.ui.activeMode]);
-  const selectedLLId   = useAppStore((s) => s.ui.selectedLifelineId);
-  const selectedMsgId  = useAppStore((s) => s.ui.selectedMessageId);
-  const selectedZoneId = useAppStore((s) => s.ui.selectedZoneId);
-  const selectedBarId  = useAppStore((s) => s.ui.selectedBarId);
+  const canvas            = useAppStore((s) => s.sequence[s.ui.activeMode]);
+  const selectedLLId      = useAppStore((s) => s.ui.selectedLifelineId);
+  const selectedMsgId     = useAppStore((s) => s.ui.selectedMessageId);
+  const selectedZoneId    = useAppStore((s) => s.ui.selectedZoneId);
+  const selectedBarId     = useAppStore((s) => s.ui.selectedBarId);
+  const selectedFragmentId = useAppStore((s) => s.ui.selectedFragmentId);
   const {
     reorderMessage, reorderLifeline, selectZone, updateZone,
     addActivationBar, updateActivationBar, removeActivationBar, selectBar,
+    selectFragment,
   } = useAppStore();
 
   const svgRef         = useRef<SVGSVGElement>(null);
@@ -212,6 +214,30 @@ export default function SequenceCanvas() {
     setDrag({ kind: 'bar-rbot', barId, llX, startMouseY: e.clientY - rect.top, originH: bar.height, originY: bar.y });
   };
 
+  // ─── zone click: cycle through overlapping zones at the same x position ──
+  const handleZoneClick = (zoneId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!svgRef.current) { selectZone(zoneId); return; }
+
+    const rect  = svgRef.current.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+
+    // All zones whose horizontal span contains the click point
+    const hits = zones
+      .map((zone, i) => ({ zone, layout: zoneLayouts[i] }))
+      .filter(({ layout }) => layout && clickX >= layout.x && clickX <= layout.x + layout.width);
+
+    if (hits.length <= 1) { selectZone(zoneId); return; }
+
+    // If any zone at this point is already selected, cycle one step downward in render order
+    const selIdx = hits.findIndex(({ zone }) => zone.id === selectedZoneId);
+    if (selIdx === -1) { selectZone(zoneId); return; }
+
+    // hits is in render order (index 0 = bottom, last = top); go downward to reach zones below
+    const nextIdx = (selIdx - 1 + hits.length) % hits.length;
+    selectZone(hits[nextIdx].zone.id);
+  };
+
   // ─── ghost indicators ─────────────────────────────────────────────────────
   const ghostMsgY = drag?.kind === 'msg'
     ? lifelineHeaderHeight + drag.targetOrder * rowHeight + rowHeight / 2 : null;
@@ -256,7 +282,7 @@ export default function SequenceCanvas() {
         className="block select-none"
         style={{ minWidth: '100%', minHeight: '100%' }}
         onMouseMove={handleMouseMove}
-        onClick={() => { selectZone(null); selectBar(null); }}
+        onClick={() => { selectZone(null); selectBar(null); selectFragment(null); }}
       >
         <defs>
           <pattern id="seq-dot"
@@ -296,7 +322,7 @@ export default function SequenceCanvas() {
                 strokeWidth={isSelected ? 2.5 : 1.5} strokeDasharray="10 5" rx={8}
                 style={{ cursor: 'grab' }}
                 onMouseDown={startZoneDrag(zone.id)}
-                onClick={(e) => { e.stopPropagation(); selectZone(zone.id); }} />
+                onClick={(e) => handleZoneClick(zone.id, e)} />
               <rect x={layout.x + layout.width - 8} y={30} width={8} height={height - 60}
                 fill={zone.borderColor} opacity={isSelected ? 0.4 : 0.15} rx={3}
                 style={{ cursor: 'ew-resize' }}
@@ -311,7 +337,15 @@ export default function SequenceCanvas() {
         {/* Fragments */}
         {canvas.fragments.map((frag, i) => {
           const layout = fragmentLayouts[i];
-          return layout ? <FragmentBox key={frag.id} fragment={frag} layout={layout} /> : null;
+          return layout ? (
+            <FragmentBox
+              key={frag.id}
+              fragment={frag}
+              layout={layout}
+              isSelected={selectedFragmentId === frag.id}
+              onSelect={() => selectFragment(frag.id)}
+            />
+          ) : null;
         })}
 
         {/* Lifelines (with bar-create hit area) */}

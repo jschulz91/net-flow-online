@@ -1,6 +1,10 @@
 import { PALETTE_ENTRIES } from './palette.config';
 
-export default function NodePalette() {
+type Props = {
+  onNodeClick?: (nodeType: string) => void;
+};
+
+export default function NodePalette({ onNodeClick }: Props) {
   const onDragStart = (e: React.DragEvent, nodeType: string) => {
     e.dataTransfer.setData('application/reactflow-nodetype', nodeType);
     e.dataTransfer.effectAllowed = 'move';
@@ -17,7 +21,8 @@ export default function NodePalette() {
             key={entry.nodeType}
             draggable
             onDragStart={(e) => onDragStart(e, entry.nodeType)}
-            className="cursor-grab active:cursor-grabbing px-2 py-1.5 rounded text-xs font-medium text-slate-700 bg-slate-50 hover:bg-blue-50 hover:text-blue-700 border border-slate-200 hover:border-blue-300 transition-colors select-none"
+            onClick={() => onNodeClick?.(entry.nodeType)}
+            className="cursor-pointer px-2 py-1.5 rounded text-xs font-medium text-slate-700 bg-slate-50 hover:bg-blue-50 hover:text-blue-700 border border-slate-200 hover:border-blue-300 transition-colors select-none"
             title={entry.description}
           >
             {entry.label}
