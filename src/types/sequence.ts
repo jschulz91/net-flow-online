@@ -63,4 +63,5 @@ export type SequenceCanvas = {
   activationBars: ActivationBar[];
   fragments: SequenceFragment[];
   zones: SequenceZone[];
+  notes: import('./common').StickyNote[];
 };

@@ -23,6 +23,10 @@ export default function TopToolbar({ canvasRef }: Props) {
     loadState,
     copyIstToSoll,
     addLifeline,
+    addNote,
+    toggleLeftPanel,
+    toggleRightPanel,
+    toggleInfoBlock,
   } = useAppStore();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -31,6 +35,7 @@ export default function TopToolbar({ canvasRef }: Props) {
     if (!canvasRef.current) return;
     await exportToPdf(
       canvasRef.current,
+      ui.viewType,
       meta.title,
       meta.creator,
       meta.version,
@@ -56,6 +61,17 @@ export default function TopToolbar({ canvasRef }: Props) {
 
   return (
     <div className="h-10 bg-slate-800 flex items-center px-3 gap-2 shrink-0 text-white">
+      {/* Left panel toggle */}
+      <button
+        className="toolbar-btn px-1.5 text-slate-400 hover:text-white"
+        onClick={toggleLeftPanel}
+        title={ui.showLeftPanel ? 'Linkes Panel ausblenden' : 'Linkes Panel einblenden'}
+      >
+        {ui.showLeftPanel ? '◀' : '▶'}
+      </button>
+
+      <div className="w-px h-5 bg-slate-600" />
+
       {/* Title */}
       <span className="text-sm font-semibold text-slate-200 mr-2 truncate max-w-[160px]">
         {meta.title}
@@ -132,6 +148,13 @@ export default function TopToolbar({ canvasRef }: Props) {
 
       <div className="w-px h-5 bg-slate-600 mx-1" />
 
+      {/* Sticky note */}
+      <button className="toolbar-btn" onClick={addNote} title="Notizzettel hinzufügen">
+        📝 Notiz
+      </button>
+
+      <div className="w-px h-5 bg-slate-600 mx-1" />
+
       {/* Undo / Redo */}
       <button
         className="toolbar-btn disabled:opacity-30"
@@ -163,6 +186,26 @@ export default function TopToolbar({ canvasRef }: Props) {
         PDF ↓
       </button>
       <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={handleJsonImport} />
+
+      <div className="w-px h-5 bg-slate-600" />
+
+      {/* Info block toggle */}
+      <button
+        className="toolbar-btn px-1.5 text-slate-400 hover:text-white"
+        onClick={toggleInfoBlock}
+        title={ui.showInfoBlock ? 'Info-Block ausblenden' : 'Info-Block einblenden'}
+      >
+        {ui.showInfoBlock ? '⊞' : '⊟'}
+      </button>
+
+      {/* Right panel toggle */}
+      <button
+        className="toolbar-btn px-1.5 text-slate-400 hover:text-white"
+        onClick={toggleRightPanel}
+        title={ui.showRightPanel ? 'Rechtes Panel ausblenden' : 'Rechtes Panel einblenden'}
+      >
+        {ui.showRightPanel ? '▶' : '◀'}
+      </button>
     </div>
   );
 }

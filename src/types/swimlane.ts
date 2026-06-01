@@ -47,4 +47,5 @@ export type SwimlaneCanvas = {
   nodes: FlowNode[];
   edges: FlowEdge[];
   viewport: { x: number; y: number; zoom: number };
+  notes: import('./common').StickyNote[];
 };

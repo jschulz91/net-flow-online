@@ -39,6 +39,9 @@ type UIState = {
   selectedFragmentId: string | null;
   selectedZoneId: string | null;
   selectedBarId: string | null;
+  showLeftPanel: boolean;
+  showRightPanel: boolean;
+  showInfoBlock: boolean;
 };
 
 type HistoryEntry = {
@@ -56,11 +59,11 @@ const DEFAULT_LANE_COLORS = [
 ];
 
 function emptySwimCanvas(): SwimlaneCanvas {
-  return { lanes: [], nodes: [], edges: [], viewport: { x: 0, y: 0, zoom: 1 } };
+  return { lanes: [], nodes: [], edges: [], viewport: { x: 0, y: 0, zoom: 1 }, notes: [] };
 }
 
 function emptySequenceCanvas(): SequenceCanvas {
-  return { lifelines: [], messages: [], activationBars: [], fragments: [], zones: [] };
+  return { lifelines: [], messages: [], activationBars: [], fragments: [], zones: [], notes: [] };
 }
 
 const defaultMeta: DiagramMeta = {
@@ -90,6 +93,14 @@ type Store = AppState & {
   selectMessage: (id: string | null) => void;
   selectFragment: (id: string | null) => void;
   selectZone: (id: string | null) => void;
+  toggleLeftPanel: () => void;
+  toggleRightPanel: () => void;
+  toggleInfoBlock: () => void;
+
+  // Notes
+  addNote: () => void;
+  updateNote: (id: string, patch: Partial<import('../types').StickyNote>) => void;
+  removeNote: (id: string) => void;
 
   // Swimlane – Lanes
   addLane: () => void;
@@ -173,6 +184,9 @@ export const useAppStore = create<Store>((set, get) => ({
     selectedFragmentId: null,
     selectedZoneId: null,
     selectedBarId: null,
+    showLeftPanel: true,
+    showRightPanel: true,
+    showInfoBlock: true,
   },
   past: [],
   future: [],
@@ -277,6 +291,40 @@ export const useAppStore = create<Store>((set, get) => ({
         }
       }),
     ),
+
+  toggleLeftPanel:  () => set(produce((s: Store) => { s.ui.showLeftPanel  = !s.ui.showLeftPanel;  })),
+  toggleRightPanel: () => set(produce((s: Store) => { s.ui.showRightPanel = !s.ui.showRightPanel; })),
+  toggleInfoBlock:  () => set(produce((s: Store) => { s.ui.showInfoBlock  = !s.ui.showInfoBlock;  })),
+
+  addNote: () =>
+    set(produce((s: Store) => {
+      const { viewType, activeMode } = s.ui;
+      const canvas = viewType === 'swimlane' ? s.swimlane[activeMode] : s.sequence[activeMode];
+      const offset = (canvas.notes.length % 6) * 24;
+      canvas.notes.push({
+        id: nanoid(),
+        x: 80 + offset,
+        y: 80 + offset,
+        text: '',
+        color: '#fef08a',
+        width: 180,
+      });
+    })),
+
+  updateNote: (id, patch) =>
+    set(produce((s: Store) => {
+      const { viewType, activeMode } = s.ui;
+      const canvas = viewType === 'swimlane' ? s.swimlane[activeMode] : s.sequence[activeMode];
+      const note = canvas.notes.find((n) => n.id === id);
+      if (note) Object.assign(note, patch);
+    })),
+
+  removeNote: (id) =>
+    set(produce((s: Store) => {
+      const { viewType, activeMode } = s.ui;
+      const canvas = viewType === 'swimlane' ? s.swimlane[activeMode] : s.sequence[activeMode];
+      canvas.notes = canvas.notes.filter((n) => n.id !== id);
+    })),
 
   // ---- Swimlane Lanes ----
 
@@ -759,7 +807,9 @@ export const useAppStore = create<Store>((set, get) => ({
         s.sequence = state.sequence;
         // Migrate: ensure new fields exist in older saved files
         for (const mode of ['IST', 'SOLL'] as const) {
-          if (!s.sequence[mode].zones) s.sequence[mode].zones = [];
+          if (!s.sequence[mode].zones)  s.sequence[mode].zones  = [];
+          if (!s.sequence[mode].notes)  s.sequence[mode].notes  = [];
+          if (!s.swimlane[mode].notes)  s.swimlane[mode].notes  = [];
         }
         s.past = [];
         s.future = [];

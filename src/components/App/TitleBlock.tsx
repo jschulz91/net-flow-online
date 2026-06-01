@@ -4,6 +4,9 @@ export default function TitleBlock() {
   const meta = useAppStore((s) => s.meta);
   const mode = useAppStore((s) => s.ui.activeMode);
   const viewType = useAppStore((s) => s.ui.viewType);
+  const show = useAppStore((s) => s.ui.showInfoBlock);
+
+  if (!show) return null;
 
   return (
     <div className="absolute bottom-3 right-3 z-20 border border-slate-300 bg-white/95 shadow text-[10px] text-slate-600 pointer-events-none"

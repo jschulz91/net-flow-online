@@ -11,6 +11,7 @@ import FragmentProperties from './FragmentProperties';
 
 export default function PropertiesPanel() {
   const ui = useAppStore((s) => s.ui);
+  const show = ui.showRightPanel;
 
   const hasSelection =
     ui.selectedNodeId ||
@@ -22,7 +23,8 @@ export default function PropertiesPanel() {
     ui.selectedBarId;
 
   return (
-    <div className="w-56 bg-white border-l border-slate-200 flex flex-col overflow-y-auto shrink-0">
+    <div className={`shrink-0 overflow-hidden transition-all duration-200 ${show ? 'w-56' : 'w-0'}`}>
+    <div className="w-56 bg-white border-l border-slate-200 flex flex-col overflow-y-auto h-full">
       <div className="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
         Eigenschaften
       </div>
@@ -37,6 +39,7 @@ export default function PropertiesPanel() {
         {ui.selectedBarId && <ActivationBarProperties />}
         {ui.selectedFragmentId && <FragmentProperties />}
       </div>
+    </div>
     </div>
   );
 }

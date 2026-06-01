@@ -23,6 +23,7 @@ const MSG_TYPES: { type: MessageType; label: string; desc: string }[] = [
 export default function LifelinePalette() {
   const { addLifeline, addMessage, addZone, sequence, ui } = useAppStore();
   const selectedLifelineId = useAppStore((s) => s.ui.selectedLifelineId);
+  const show = useAppStore((s) => s.ui.showLeftPanel);
 
   const lifelines = sequence[ui.activeMode].lifelines;
 
@@ -42,7 +43,8 @@ export default function LifelinePalette() {
   };
 
   return (
-    <div className="w-36 bg-white border-r border-slate-200 flex flex-col overflow-y-auto shrink-0">
+    <div className={`shrink-0 overflow-hidden transition-all duration-200 ${show ? 'w-36' : 'w-0'}`}>
+    <div className="w-36 bg-white border-r border-slate-200 flex flex-col overflow-y-auto h-full">
       <div className="px-2 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
         Lebenslinien
       </div>
@@ -94,6 +96,7 @@ export default function LifelinePalette() {
           + Bereich
         </button>
       </div>
+    </div>
     </div>
   );
 }
