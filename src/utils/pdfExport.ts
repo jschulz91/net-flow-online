@@ -1,5 +1,7 @@
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
+import { useAppStore } from '../store/appStore';
+import type { StickyNote } from '../types';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -40,6 +42,70 @@ function drawTitleBar(
   }
 }
 
+// ─── Sticky notes (drawn on top of the rendered canvas) ──────────────────────
+
+function wrapLines(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+  const lines: string[] = [];
+  for (const rawLine of text.split('\n')) {
+    let line = '';
+    for (const word of rawLine.split(/\s+/).filter(Boolean)) {
+      const test = line ? `${line} ${word}` : word;
+      if (ctx.measureText(test).width > maxWidth && line) {
+        lines.push(line);
+        line = word;
+      } else {
+        line = test;
+      }
+    }
+    lines.push(line);
+  }
+  return lines;
+}
+
+function drawNotes(ctx: CanvasRenderingContext2D, notes: StickyNote[], pixelRatio: number) {
+  const HEADER_H = 24;
+  const PADDING = 8;
+  const LINE_H = 14;
+  const MIN_BODY_H = 72;
+
+  ctx.save();
+  ctx.scale(pixelRatio, pixelRatio);
+  ctx.font = '11px sans-serif';
+  ctx.textBaseline = 'top';
+
+  for (const note of notes) {
+    const maxTextWidth = note.width - PADDING * 2;
+    const lines = wrapLines(ctx, note.text || '', maxTextWidth);
+    const textH = Math.max(MIN_BODY_H, lines.length * LINE_H + PADDING * 2);
+    const totalH = HEADER_H + textH;
+
+    // Shadow
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.25)';
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetY = 2;
+    ctx.fillStyle = note.color;
+    ctx.fillRect(note.x, note.y, note.width, totalH);
+    ctx.restore();
+
+    // Header strip
+    ctx.fillStyle = note.color + 'cc';
+    ctx.fillRect(note.x, note.y, note.width, HEADER_H);
+
+    // Body
+    ctx.fillStyle = note.color;
+    ctx.fillRect(note.x, note.y + HEADER_H, note.width, textH);
+
+    // Text
+    ctx.fillStyle = '#1e293b';
+    lines.forEach((line, i) => {
+      ctx.fillText(line, note.x + PADDING, note.y + HEADER_H + PADDING + i * LINE_H, maxTextWidth);
+    });
+  }
+
+  ctx.restore();
+}
+
 // ─── Sequence export (SVG → multi-page PDF) ──────────────────────────────────
 
 async function renderSequenceSvg(svgEl: SVGSVGElement, pixelRatio: number): Promise<HTMLCanvasElement> {
@@ -61,6 +127,33 @@ async function renderSequenceSvg(svgEl: SVGSVGElement, pixelRatio: number): Prom
   clone.style.minWidth = '';
   clone.style.minHeight = '';
 
+  // Replace every <foreignObject> (HTML labels) with a native SVG <text>. Browsers
+  // refuse to rasterize an SVG loaded via <img> when its foreignObject HTML isn't in
+  // the XHTML namespace, which makes the whole export fail — and even when it loads it
+  // can taint the canvas. Native <text> renders reliably.
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  clone.querySelectorAll('foreignObject').forEach((fo) => {
+    const x = parseFloat(fo.getAttribute('x') ?? '0');
+    const y = parseFloat(fo.getAttribute('y') ?? '0');
+    const w = parseFloat(fo.getAttribute('width') ?? '0');
+    const h = parseFloat(fo.getAttribute('height') ?? '0');
+    const div = fo.querySelector('div');
+    const label = (div?.textContent ?? fo.textContent ?? '').trim();
+
+    const text = document.createElementNS(SVG_NS, 'text');
+    text.setAttribute('x', String(x + w / 2));
+    text.setAttribute('y', String(y + h / 2));
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('dominant-baseline', 'middle');
+    text.setAttribute('font-size', '11');
+    text.setAttribute('font-weight', '600');
+    text.setAttribute('font-family', 'sans-serif');
+    text.setAttribute('fill', div?.style.color || '#1e293b');
+    text.textContent = label;
+
+    fo.replaceWith(text);
+  });
+
   const svgStr = new XMLSerializer().serializeToString(clone);
   const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
   const url = URL.createObjectURL(blob);
@@ -75,6 +168,7 @@ async function renderSequenceSvg(svgEl: SVGSVGElement, pixelRatio: number): Prom
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.scale(pixelRatio, pixelRatio);
     ctx.drawImage(img, 0, 0, svgW, svgH);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     return canvas;
   } finally {
     URL.revokeObjectURL(url);
@@ -99,6 +193,12 @@ async function exportSequencePdf(
   const svgH = svgEl.height.baseVal.value;
 
   const fullCanvas = await renderSequenceSvg(svgEl, PIXEL_RATIO);
+
+  const notes = useAppStore.getState().sequence[mode as 'IST' | 'SOLL']?.notes ?? [];
+  if (notes.length > 0) {
+    const fullCtx = fullCanvas.getContext('2d')!;
+    drawNotes(fullCtx, notes, PIXEL_RATIO);
+  }
 
   // A4 landscape
   const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });

@@ -1,8 +1,9 @@
 import { useRef, useState, useEffect } from 'react';
+import { useStore } from 'reactflow';
 import { useAppStore } from '../../store/appStore';
 import type { StickyNote } from '../../types';
 
-const NOTE_COLORS = [
+export const NOTE_COLORS = [
   { value: '#fef08a', label: 'Gelb' },
   { value: '#bfdbfe', label: 'Blau' },
   { value: '#bbf7d0', label: 'Grün' },
@@ -10,14 +11,6 @@ const NOTE_COLORS = [
   { value: '#e9d5ff', label: 'Lila' },
   { value: '#fed7aa', label: 'Orange' },
 ];
-
-type DragState = {
-  id: string;
-  startMouseX: number;
-  startMouseY: number;
-  startNoteX: number;
-  startNoteY: number;
-};
 
 type CardProps = {
   note: StickyNote;
@@ -34,8 +27,8 @@ function NoteCard({ note, onUpdate, onRemove, onDragStart }: CardProps) {
 
   return (
     <div
-      className="absolute shadow-lg rounded select-none"
-      style={{ left: note.x, top: note.y, width: note.width, zIndex: 60, pointerEvents: 'auto' }}
+      className="shadow-lg rounded select-none"
+      style={{ width: note.width, pointerEvents: 'auto' }}
     >
       {/* Header / drag handle */}
       <div
@@ -95,17 +88,22 @@ function NoteCard({ note, onUpdate, onRemove, onDragStart }: CardProps) {
   );
 }
 
-export default function StickyNoteOverlay() {
-  const viewType  = useAppStore((s) => s.ui.viewType);
-  const mode      = useAppStore((s) => s.ui.activeMode);
-  const notes     = useAppStore((s) =>
-    viewType === 'swimlane'
-      ? (s.swimlane[mode].notes ?? [])
-      : (s.sequence[mode].notes ?? []),
-  );
+// ─── Sequence: notes live in SVG/content coordinates and scroll with the diagram ──
+
+type SeqDragState = {
+  id: string;
+  startMouseX: number;
+  startMouseY: number;
+  startNoteX: number;
+  startNoteY: number;
+};
+
+export function SequenceStickyNotes({ width, height }: { width: number; height: number }) {
+  const mode  = useAppStore((s) => s.ui.activeMode);
+  const notes = useAppStore((s) => s.sequence[mode].notes ?? []);
   const { updateNote, removeNote } = useAppStore();
 
-  const [drag, setDrag] = useState<DragState | null>(null);
+  const [drag, setDrag] = useState<SeqDragState | null>(null);
 
   useEffect(() => {
     if (!drag) return;
@@ -131,15 +129,85 @@ export default function StickyNoteOverlay() {
   if (notes.length === 0) return null;
 
   return (
-    <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 55 }}>
+    <div className="absolute top-0 left-0 pointer-events-none" style={{ width, height, zIndex: 55 }}>
       {notes.map((note) => (
-        <NoteCard
+        <div key={note.id} className="absolute" style={{ left: note.x, top: note.y, zIndex: 60 }}>
+          <NoteCard
+            note={note}
+            onUpdate={(patch) => updateNote(note.id, patch)}
+            onRemove={() => removeNote(note.id)}
+            onDragStart={handleDragStart}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Swimlane: notes live in flow coordinates and follow ReactFlow's pan/zoom ──
+
+type FlowDragState = {
+  id: string;
+  startMouseX: number;
+  startMouseY: number;
+  startNoteX: number;
+  startNoteY: number;
+  zoom: number;
+};
+
+export function SwimlaneStickyNotes() {
+  const mode  = useAppStore((s) => s.ui.activeMode);
+  const notes = useAppStore((s) => s.swimlane[mode].notes ?? []);
+  const { updateNote, removeNote } = useAppStore();
+  const transform = useStore((s) => s.transform);
+  const [tx, ty, zoom] = transform;
+
+  const [drag, setDrag] = useState<FlowDragState | null>(null);
+
+  useEffect(() => {
+    if (!drag) return;
+    const onMove = (e: MouseEvent) => {
+      const dx = (e.clientX - drag.startMouseX) / drag.zoom;
+      const dy = (e.clientY - drag.startMouseY) / drag.zoom;
+      updateNote(drag.id, {
+        x: Math.max(0, drag.startNoteX + dx),
+        y: Math.max(0, drag.startNoteY + dy),
+      });
+    };
+    const onUp = () => setDrag(null);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+  }, [drag, updateNote]);
+
+  const handleDragStart = (e: React.MouseEvent, note: StickyNote) => {
+    e.preventDefault();
+    setDrag({ id: note.id, startMouseX: e.clientX, startMouseY: e.clientY, startNoteX: note.x, startNoteY: note.y, zoom });
+  };
+
+  if (notes.length === 0) return null;
+
+  return (
+    <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 55, overflow: 'hidden' }}>
+      {notes.map((note) => (
+        <div
           key={note.id}
-          note={note}
-          onUpdate={(patch) => updateNote(note.id, patch)}
-          onRemove={() => removeNote(note.id)}
-          onDragStart={handleDragStart}
-        />
+          className="absolute"
+          style={{
+            left: note.x * zoom + tx,
+            top: note.y * zoom + ty,
+            transform: `scale(${zoom})`,
+            transformOrigin: 'top left',
+            zIndex: 60,
+          }}
+        >
+          <NoteCard
+            note={note}
+            onUpdate={(patch) => updateNote(note.id, patch)}
+            onRemove={() => removeNote(note.id)}
+            onDragStart={handleDragStart}
+          />
+        </div>
       ))}
     </div>
   );

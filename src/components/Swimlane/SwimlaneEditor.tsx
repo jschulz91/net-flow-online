@@ -19,7 +19,7 @@ import { NODE_COLORS, NODE_BORDER_COLORS } from '../../utils/colors';
 import { nanoid } from '../../utils/nanoid';
 import type { FlowNode } from '../../types';
 import { PALETTE_ENTRIES } from './palette.config';
-import StickyNoteOverlay from '../Notes/StickyNoteOverlay';
+import { SwimlaneStickyNotes } from '../Notes/StickyNoteOverlay';
 
 const LABEL_COLUMN_WIDTH = 144;
 
@@ -153,11 +153,11 @@ function SwimlaneCanvas() {
           >
             <Background color="#e2e8f0" gap={16} />
             <SwimLaneBackground lanes={canvas.lanes} layouts={laneLayouts} />
+            <SwimlaneStickyNotes />
             <Controls />
             <MiniMap zoomable pannable />
           </ReactFlow>
         </div>
-        <StickyNoteOverlay />
       </div>
     </div>
   );

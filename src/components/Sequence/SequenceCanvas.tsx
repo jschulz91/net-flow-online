@@ -13,6 +13,7 @@ import LifelineColumn, { LIFELINE_ICONS } from './LifelineColumn';
 import MessageArrow from './MessageArrow';
 import FragmentBox from './FragmentBox';
 import ActivationBarEl from './ActivationBarEl';
+import { SequenceStickyNotes } from '../Notes/StickyNoteOverlay';
 
 // ─── drag union ──────────────────────────────────────────────────────────────
 type MsgDrag     = { kind: 'msg';        id: string; startOrder: number; targetOrder: number };
@@ -276,11 +277,11 @@ export default function SequenceCanvas() {
       className="flex-1 overflow-auto bg-slate-50"
       style={{ cursor: cursorStyle }}
     >
+      <div className="relative" style={{ width, height, minWidth: '100%', minHeight: '100%' }}>
       <svg
         ref={svgRef}
         width={width} height={height}
-        className="block select-none"
-        style={{ minWidth: '100%', minHeight: '100%' }}
+        className="block select-none absolute top-0 left-0"
         onMouseMove={handleMouseMove}
         onClick={() => { selectZone(null); selectBar(null); selectFragment(null); }}
       >
@@ -504,6 +505,8 @@ export default function SequenceCanvas() {
             stroke="#e2e8f0" strokeWidth={1.5} />
         </g>
       </svg>
+      <SequenceStickyNotes width={width} height={height} />
+      </div>
     </div>
   );
 }
